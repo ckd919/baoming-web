@@ -66,12 +66,12 @@ td{padding:12px 16px;font-size:13px;border-bottom:1px solid #f5f5f5}
 </div>
 <div class="content">
 <div id="usersTab">
-<table><thead><tr><th>ID</th><th>昵称</th><th>手机号</th><th>OpenID</th><th>角色</th><th>实名</th><th>注册时间</th></tr></thead>
+<table><thead><tr><th>ID</th><th>昵称</th><th>手机号</th><th>OpenID</th><th>角色</th><th>实名</th><th>状态</th><th>操作</th><th>注册时间</th></tr></thead>
 <tbody id="usersBody"></tbody></table>
 <div id="userPages" class="pagination"></div>
 </div>
 <div id="activitiesTab" style="display:none">
-<table><thead><tr><th>ID</th><th>活动名称</th><th>创建者</th><th>状态</th><th>报名数</th><th>创建时间</th></tr></thead>
+<table><thead><tr><th>ID</th><th>活动名称</th><th>创建者</th><th>状态</th><th>报名数</th><th>操作</th><th>创建时间</th></tr></thead>
 <tbody id="activitiesBody"></tbody></table>
 </div>
 </div>
@@ -120,9 +120,26 @@ function logout() {
   location.reload();
 }
 
-function api(path) {
-  return fetch(API + path, { headers: {'Authorization': 'Bearer ' + token} })
+function api(path, opts) {
+  opts = opts || {};
+  opts.headers = opts.headers || {};
+  opts.headers['Authorization'] = 'Bearer ' + token;
+  return fetch(API + path, opts)
     .then(r => { if (r.status === 401) { logout(); throw new Error('未登录'); } return r.json(); });
+}
+
+function toggleUser(id) {
+  if (!confirm('确定切换该用户的启用状态吗？')) return;
+  api('/admin/users/' + id + '/toggle', { method: 'PUT' })
+    .then(d => { if (d.ok) loadUsers(currentPage); else alert(d.error); })
+    .catch(e => alert(e.message));
+}
+
+function deleteActivity(id, name) {
+  if (!confirm('确定删除活动「' + name + '」吗？此操作不可恢复！')) return;
+  api('/admin/activities/' + id, { method: 'DELETE' })
+    .then(d => { if (d.ok) loadActivities(); else alert(d.error); })
+    .catch(e => alert(e.message));
 }
 
 function loadDashboard() {
@@ -140,9 +157,9 @@ function loadUsers(page) {
   api('/admin/users?page=' + currentPage + '&pageSize=20').then(d => {
     var html = '';
     (d.users||[]).forEach(u => {
-      html += '<tr><td>' + u.id + '</td><td>' + e(u.nickname) + '</td><td>' + e(u.phone) + '</td><td>' + (u.hasOpenid ? '✅' : '❌') + '</td><td>' + e(u.role) + '</td><td>' + e(u.realName) + '</td><td>' + e(u.createdAt) + '</td></tr>';
+      html += '<tr><td>' + u.id + '</td><td>' + e(u.nickname) + '</td><td>' + e(u.phone) + '</td><td>' + (u.hasOpenid ? '✅' : '❌') + '</td><td>' + e(u.role) + '</td><td>' + e(u.realName) + '</td><td><span class="status ' + (u.enabled ? 'published' : 'ended') + '">' + (u.enabled ? '正常' : '已禁用') + '</span></td><td><button onclick="toggleUser(' + u.id + ')" style="padding:4px 12px;border-radius:8px;border:1px solid #ddd;cursor:pointer;font-size:12px;background:#fff">' + (u.enabled ? '禁用' : '启用') + '</button></td><td>' + e(u.createdAt) + '</td></tr>';
     });
-    document.getElementById('usersBody').innerHTML = html || '<tr><td colspan="7" style="text-align:center;color:#999">暂无数据</td></tr>';
+    document.getElementById('usersBody').innerHTML = html || '<tr><td colspan="9" style="text-align:center;color:#999">暂无数据</td></tr>';
     renderPages(d.pages, loadUsers);
   });
 }
@@ -151,9 +168,9 @@ function loadActivities() {
   api('/admin/activities').then(d => {
     var html = '';
     (d.activities||[]).forEach(a => {
-      html += '<tr><td>' + a.id + '</td><td>' + e(a.name) + '</td><td>' + e(a.ownerName) + '</td><td><span class="status ' + a.status + '">' + statusLabel(a.status) + '</span></td><td>' + a.submissionCount + '</td><td>' + e(a.createdAt) + '</td></tr>';
+      html += '<tr><td>' + a.id + '</td><td>' + e(a.name) + '</td><td>' + e(a.ownerName) + '</td><td><span class="status ' + a.status + '">' + statusLabel(a.status) + '</span></td><td>' + a.submissionCount + '</td><td><button onclick="deleteActivity(\'' + a.id + '\',\'' + e(a.name).replace(/'/g,'') + '\')" style="padding:4px 12px;border-radius:8px;border:1px solid #D32F2F;color:#D32F2F;cursor:pointer;font-size:12px;background:#fff">删除</button></td><td>' + e(a.createdAt) + '</td></tr>';
     });
-    document.getElementById('activitiesBody').innerHTML = html || '<tr><td colspan="6" style="text-align:center;color:#999">暂无数据</td></tr>';
+    document.getElementById('activitiesBody').innerHTML = html || '<tr><td colspan="7" style="text-align:center;color:#999">暂无数据</td></tr>';
   });
 }
 
