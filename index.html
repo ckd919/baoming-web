@@ -90,7 +90,7 @@ function doLogin() {
   var p = document.getElementById('phone').value.trim();
   var pw = document.getElementById('password').value.trim();
   if (!p || !pw) { document.getElementById('loginError').textContent = '请输入手机号和密码'; return; }
-  fetch(API + '/auth/login', {
+  fetch(API + '/auth/admin/login', {
     method: 'POST', headers: {'Content-Type':'application/json'},
     body: JSON.stringify({phone:p, password:pw})
   })
