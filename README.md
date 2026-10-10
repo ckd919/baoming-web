@@ -1,4 +1,4 @@
-# 康康个人工具 - 管理后台
+# 109&123球迷看台 - 管理后台
 
 纯静态前端，调用 [baoming-server](https://github.com/ckd919/baoming-server) API。
 
